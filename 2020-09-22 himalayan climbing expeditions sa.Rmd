@@ -1,0 +1,283 @@
+---
+title: "2020-09-22 himalayan climbing expeditions"
+author: "Sergio Aquino"
+date: "21/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries and Data
+
+```{r cars}
+library(tidyverse)
+library(tidytuesdayR)
+library(scales)
+
+theme_set(theme_light())
+
+tuesdata <- tidytuesdayR::tt_load(2020, week = 39)
+
+climbers <- tuesdata$members
+```
+
+## Exploring the Climbers Dataset
+
+```{r}
+
+# Season
+climbers %>% 
+  count(season, sort = T)
+
+# Sex
+climbers %>% 
+  count(sex, sort = T)
+
+# Nationality
+climbers %>% 
+  count(citizenship, sort = T)
+
+# Injured
+climbers %>% 
+  count(injured, sort = T)
+
+# Injury Tyoe
+climbers %>% 
+  count(injury_type, sort = T)
+
+# Died
+climbers %>% 
+  count(died, sort = T)
+
+# Died
+climbers %>% 
+  count(death_cause, sort = T)
+
+```
+## Exploring Peaks
+## There are 468 peaks in the Himalayas and 127 remain unclimbed
+
+```{r}
+peaks <- tuesdata$peaks
+
+# Climbing Status
+peaks %>% 
+  count(climbing_status, sort = T)
+
+# How many peaks
+length(unique(peaks$peak_name))
+
+# Climbing Status
+peaks %>% 
+  filter(!is.na(first_ascent_year)) %>% 
+  count(peak_name, first_ascent_year, first_ascent_country, sort = T) %>% 
+  arrange(first_ascent_year) 
+
+```
+
+
+## Exploring expeditions
+
+```{r}
+expeditions <- tuesdata$expeditions
+
+# termination
+expeditions %>% 
+  count(termination_reason)
+
+
+# oxygen used
+expeditions %>% 
+  filter(oxygen_used == TRUE) %>% 
+  count(year) %>% 
+  arrange(-year)
+
+# highest point
+expeditions %>% 
+  ggplot(aes(highpoint_metres)) +
+  geom_histogram()
+
+# number of expeditions per peak 
+expeditions %>% 
+  summarize(attempts = n(), highpoint_metres) %>% 
+  arrange(-attempts)
+  
+# peak and oxygen
+expeditions %>% 
+  filter(oxygen_used==T) %>% 
+  count(peak_id, year) %>% 
+  arrange(-n)
+
+# second graph
+# oxygen
+with_oxy <- expeditions %>%
+  group_by(year) %>% 
+  summarize(oxygen_used=sum(oxygen_used)) %>% 
+  filter(oxygen_used >0) %>% 
+  ungroup() %>% 
+  ggplot(aes(year, oxygen_used)) +
+  geom_line()
+
+# number of expeditions per year
+all_exp <- expeditions %>% 
+  count(year) %>% 
+  ggplot(aes(year, n)) +
+  geom_line()
+
+# solo
+climbers %>% 
+  filter(solo==T) %>% 
+  count(year, solo, oxygen_used)
+```
+
+
+## Himalayan Climbing and the Use of Oxygen
+
+```{r}
+
+# Import Jpeg
+library(cowplot)
+library(ggpubr)
+library(jpeg)
+
+
+# oxygen and death
+climbers %>%
+  filter(year >= 1922) %>% 
+  count(oxygen_used, died)
+
+# climbers %>% 
+#   filter(oxygen_used==T) %>% 
+#   count(year, oxygen_used)
+
+
+## plot of expeditions total and with oxygen
+# oxygen
+with_oxy <- expeditions %>%
+  group_by(year) %>% 
+  summarize(oxygen_used=sum(oxygen_used)) %>% 
+  filter(oxygen_used >0)
+
+
+
+# number of expeditions per year
+all_exp <- expeditions %>% 
+  count(year) 
+
+
+
+# with or without oxygen
+p1 <-  all_exp %>% 
+         left_join(with_oxy) %>% 
+         ggplot(aes(year)) +
+          geom_line(aes(y = n), color="darkred") + 
+          geom_line(aes(y = oxygen_used), color="steelblue", linetype="twodash") +
+          ##
+  geom_curve(aes(x = 1980, y = 330, xend = 2000, yend = 330), size = 0.5, 
+             arrow = arrow(length = unit(0.1, "inch")), 
+             curvature = -0.3, color = "#000000") +
+  annotate("text", x = 1970, y = 315, label = "all expeditions", 
+           hjust = 0, size = 5, color = "#000000") +
+  annotate("text", x = 1995, y = 15, label = "used oxygen", 
+           hjust = 0, size = 5, color = "#000000") +
+  ##
+            labs(title = "Expeditions Using Oxygen",
+               subtitle = "The Use of Oxygen Bottles Started in 1922.",
+               caption = "Data from The Himalayan Database",
+               x = '',
+               y = "Number of Expeditions"
+               ) +
+          geom_vline(xintercept = 1922) +
+          scale_color_manual(values = c("darkred", "steelblue")) +
+          theme_minimal_grid() +
+          theme(axis.text.x=element_text(size=rel(0.75))) +
+          border(color = "black", size = 0.8, linetype = NULL) +
+          bgcolor("#e1eaea")
+      
+
+## solo
+p2 <- climbers %>% 
+  filter(solo==T ) %>% 
+  count(year, solo, oxygen_used) %>% 
+  ggplot(aes(x = year, y = n, fill = oxygen_used)) +
+  geom_col(position = "dodge", colour = "black") +
+  scale_fill_brewer(palette = "Pastel1") +
+   scale_y_continuous(
+    # don't expand y scale at the lower end
+    expand = expansion(mult = c(0, 0.05))
+  ) +
+  labs(title = "Do Solo Climbers Use Oxygen?",
+               subtitle = "Amazingly, no.",
+               caption = "Data from The Himalayan Database",
+               x = '',
+               y = "Number of Solo Climbers",
+               Col = 'Oxygen Used'
+               ) +
+          scale_color_manual(values = c("darkred", "steelblue")) +
+          theme_minimal_grid() +
+          theme(axis.text.x=element_text(size=rel(0.75))) +
+          border(color = "black", size = 0.8, linetype = NULL) +
+          bgcolor("#e1eaea") +
+          scale_fill_discrete(name = "Oxygen Used") 
+
+          
+
+
+## does the use oxygen lead to less deaths
+# oxygen used started in 1922
+died <- climbers %>% 
+  filter(died == T) %>% 
+  count(year, died) %>% 
+  rename('total_deaths' = 'n')
+
+oxygen <- expeditions %>%
+  filter(oxygen_used==T) %>% 
+  count(year) %>% 
+  rename('oxygen_used' = 'n')
+
+p3 <- died %>% 
+  inner_join(oxygen) %>% 
+  select(-died) %>% 
+  ggplot(aes(year)) +
+          geom_line(aes(y = total_deaths, color="darkred")) + 
+          geom_line(aes(y = oxygen_used), color="steelblue", linetype="twodash") +
+  geom_curve(aes(x = 1993, y = 150, xend = 2010, yend =150), size = 0.5, 
+             arrow = arrow(length = unit(0.1, "inch")), 
+             curvature = -0.3, color = "#000000") +
+  annotate("text", x = 1982, y = 140, label = "climbers that used oxygen", 
+           hjust = 0, size = 5, color = "#000000") +
+  annotate("text", x = 1965, y = 35, label = "climbers that died", 
+           hjust = 0, size = 5, color = "#000000") +
+          scale_fill_brewer(palette = "Pastel1") +
+          labs(title = "Did the Use of Oxygen Help Lower the Number of Deaths? Some facts.",
+               subtitle = "The mortality rate of climbers that used oxygen was 1.14% compared to 1.53% of the climbers that didn't.",
+               caption = "Created by @sergioaquinocan, Data from The Himalayan Database, #TidyTuesday",
+               x = '',
+               y = ""
+               ) +
+          scale_color_manual(values = c("darkred", "steelblue")) +
+          guides(color = FALSE, size = FALSE) +
+          theme_minimal_grid() +
+          border(color = "black", size = 0.8, linetype = NULL) +
+          bgcolor("#e1eaea")
+
+
+# final plot
+library(patchwork)
+library(scales)
+library(ggthemes)
+
+p4 <- (p1 | p2) / p3 +
+   plot_annotation(title = 'Himalayan Climbing and the Use of Bottled Oxygen',
+                 subtitle = 'Expeditions 1905 - 2019',
+                  theme = theme(plot.title = element_text(size = 18, face="bold"))) & 
+  theme(text = element_text('mono')) +
+  theme(plot.background=element_rect(fill="#f2f2f2")) #f2f2f2
+     
+
+ggsave(filename = "climbing.png", p4, scale=1, width=14, height=8,dpi=300)
+
+```
+
