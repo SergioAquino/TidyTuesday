@@ -1,9 +1,8 @@
 ---
-title: "TidyTuesday - Beyoncé and Taylor Swift Lyrics, Code by Sergio Aquino" 
+title: "TidyTuesday - Beyoncé and Taylor Swift Lyrics" 
 date: 2020-10-01
 output: html_output
 ---
-
 
 # Libraries and data
 
@@ -17,6 +16,7 @@ library(tidytuesdayR)
 library(tidytext)
 library(scales)
 library(janitor)
+library(ggpubr)
 
 tuesdata <- tidytuesdayR::tt_load(2020, week = 40)
 
@@ -33,7 +33,8 @@ charts <- tuesdata$charts
 ```{r}
 sales %>% 
   filter(country %in% c("WW","World")) %>% 
-  arrange(-sales) 
+  arrange(-sales) %>% 
+  select(1:4)
   
 ```
 
@@ -67,8 +68,8 @@ beyonce_words %>%
 
 ```
 
-# Taylor Swift's Lyrics from Fierceless Filtered by Stop Words
 
+# Taylor Swift's Lyrics from Fierceless Filtered by Stop Words
 
 ```{r}
 
@@ -94,56 +95,61 @@ taylor_swift_words %>%
 
 ```
 
-# Tidy and Visualize
 
-```{r Visualize}
+# Use NRC to aggregate words by sentiment 
 
+```{r }
 albums_combined <- rbind(beyonce_words, taylor_swift_words)
 
-albums_sentiments <- both_singers %>%
+albums_sentiments <- albums_combined %>%
   inner_join(get_sentiments("nrc"), by = "word") %>% 
   filter(!(sentiment %in% c('positive', 'negative'))) %>% 
   mutate(sentiment = factor(sentiment),
          artist = factor(artist))
+```
 
+
+# Prepare plot
+
+
+```{r}
 
 fill <- c("#b2d183","#40b8d0")
 
 p1 <-  albums_sentiments %>%
   group_by(artist) %>%
   count(sentiment) %>%
-  mutate(percent = round(n / sum(n) * 100, digits = 0)) %>%
+  mutate(percent = n / sum(n)) %>%
   arrange(artist, sentiment) %>%
   ggplot(aes(sentiment, percent, fill = artist)) +
   geom_col(position = 'dodge', color = 'black') +
+  scale_y_continuous(labels = scales::percent_format(),
+                     expand = expansion(mult = c(0, 0.05))) +
   annotate(
     "text",
     x = 2.5,
-    y = 25,
-    label = "Both albums sold more\n  than $1M each worldwide\n evoking similar emotions.",
+    y = .25,
+    label = "Both albums sold more than\n $10M each worldwide\n evoking similar emotions.",
     fontface = "italic",
     colour = "black",
     size = 4,
-    alpha = .9
+    alpha = 1
   ) +
-  ylab("relative frequencies") +
-  scale_y_continuous(# don't expand y scale at the lower end
-    expand = expansion(mult = c(0, 0.05))) +
   theme(
     legend.position = "bottom",
     legend.direction = "horizontal",
     legend.title = element_blank()
   ) +
-  labs(title = "'Fearless' and 'Dangerously in Love' Compared",
-       subtitle = "Taylor Swift and Beyonce's Choice of Words in their Top Selling Albums Grouped by Sentiment", 
-       caption = "Created by @sergioaquinocan, Data from Rosie Baillie and Dr. Sara Stoudt, #TidyTuesday") +
-  labs(x = "Sentiment", y = "Percent") +
+  labs(title = "An Analysis of the albums 'Fearless' and 'Dangerously in Love'",
+       subtitle = "Taylor Swift and Beyonce's Lyrics from their Top Selling Albums Grouped by Sentiment",
+       caption = "Created by Sergio Aquino, Data from Rosie Baillie and Dr. Sara Stoudt, #TidyTuesday") +
+  labs(x = "Sentiment", y = element_blank()) +
   scale_fill_manual(values = fill) +
   theme(
     panel.border = element_rect(
       colour = "black",
       fill = NA,
-      size = .7
+      size = .8
     ),
     axis.text.x = element_text(colour = "black", size = 12),
     axis.text.y = element_text(colour = "black", size = 12),
@@ -156,16 +162,12 @@ p1 <-  albums_sentiments %>%
     panel.background = element_blank(),
     plot.title = element_text(
       size = 14,
-      family = "Tahoma",
       face = "bold"
     ),
-    #text = element_text(family = "Tahoma")
   ) +
-  bgcolor("#f0f5f5") +
+  bgcolor("#eff5f5") +
   guides(fill = guide_legend(reverse = T))
 p1
-
-
 ```
 
 
@@ -173,6 +175,6 @@ p1
 
 ```{r}
 
-ggsave('SA projects/test.png', p1, scale=1, width=10, height=8,dpi=300)
+ggsave('Beyonce_Taylor_Swift_lyrics.png', p1, scale=1, width=10, height=8,dpi=300)
 
 ```
