@@ -28,7 +28,7 @@ charts <- tuesdata$charts
 ```
 
 
-# What was the top selling album of each artist? 
+# What was the top selling album of each artist?? 
  
 ```{r}
 sales %>% 
