@@ -1,0 +1,178 @@
+---
+title: "TidyTuesday - Beyoncé and Taylor Swift Lyrics, Code by Sergio Aquino" 
+date: 2020-10-01
+output: html_output
+---
+
+
+# Libraries and data
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(forcats)
+library(tidytuesdayR)
+library(tidytext)
+library(scales)
+library(janitor)
+
+tuesdata <- tidytuesdayR::tt_load(2020, week = 40)
+
+beyonce_lyrics <- tuesdata$beyonce_lyrics
+taylor_swift_lyrics <- tuesdata$taylor_swift_lyrics
+sales <- tuesdata$sales
+charts <- tuesdata$charts
+
+```
+
+
+# What was the top selling album of each artist? 
+ 
+```{r}
+sales %>% 
+  filter(country %in% c("WW","World")) %>% 
+  arrange(-sales) 
+  
+```
+
+# Beyonce Lyrics from Dangerously In Love Filtered by Stop Words
+
+```{r}
+
+DangerouslyInLove <- c("Crazy in Love (Ft. JAY-Z)", "Naughty Girl", "That's How You Like It (Ft. JAY-Z)", "Baby Boy (Ft. Sean Paul)", "Hip Hop Star (Ft. Big Boi & Sleepy Brown)", "Be With You", "Me, Myself, and I", "Yes", "Signs (Ft. Missy Elliott)", "Speechless", "The Closer I Get to You (Ft. Luther Vandross)", "Dangerously in Love 2", "Beyoncé Interlude", "Gift From Virgo", "Daddy")
+
+beyonce_lyrics_dil <- beyonce_lyrics %>%
+  filter(song_name %in% c(DangerouslyInLove)) %>%
+  mutate(album = "Dangerously in Love") %>% 
+  rename(song = song_name,
+         artist = artist_name)
+
+beyonce_words <- beyonce_lyrics_dil %>% 
+  unnest_tokens(word, line) %>% 
+  select(artist, album, song, word) %>% 
+  anti_join(stop_words, by = "word") %>% 
+  filter(!word %in%
+           c("ohh", "ooh", "yeah", "hey", "uh", "ya", "na", "em", "yo","huh"))
+
+beyonce_words %>% 
+  count(word, sort = TRUE) %>%
+  head(25) %>%
+  mutate(word = fct_reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col() +
+  labs(title = 'Beyonce Top 25 Words in Dangerously in Love')
+
+
+```
+
+# Taylor Swift's Lyrics from Fierceless Filtered by Stop Words
+
+
+```{r}
+
+taylor_swift_lyrics_fearless <- taylor_swift_lyrics %>%
+  clean_names() %>% 
+  filter(album == 'Fearless') %>% 
+  rename(song = title)
+
+taylor_swift_words <- taylor_swift_lyrics_fearless %>% 
+  unnest_tokens(word, lyrics) %>% 
+  select(artist, album, song, word) %>% 
+  anti_join(stop_words, by = "word") %>% 
+  filter(!word %in%
+           c("ohh", "ooh", "yeah", "hey", "uh", "ya", "na", "em", "yo","huh"))
+
+taylor_swift_words %>% 
+  count(word, sort = TRUE) %>%
+  head(25) %>%
+  mutate(word = fct_reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col() +
+  labs(title = 'Beyonce Top 25 Words in Dangerously in Love')
+
+```
+
+# Tidy and Visualize
+
+```{r Visualize}
+
+albums_combined <- rbind(beyonce_words, taylor_swift_words)
+
+albums_sentiments <- both_singers %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>% 
+  filter(!(sentiment %in% c('positive', 'negative'))) %>% 
+  mutate(sentiment = factor(sentiment),
+         artist = factor(artist))
+
+
+fill <- c("#b2d183","#40b8d0")
+
+p1 <-  albums_sentiments %>%
+  group_by(artist) %>%
+  count(sentiment) %>%
+  mutate(percent = round(n / sum(n) * 100, digits = 0)) %>%
+  arrange(artist, sentiment) %>%
+  ggplot(aes(sentiment, percent, fill = artist)) +
+  geom_col(position = 'dodge', color = 'black') +
+  annotate(
+    "text",
+    x = 2.5,
+    y = 25,
+    label = "Both albums sold more\n  than $1M each worldwide\n evoking similar emotions.",
+    fontface = "italic",
+    colour = "black",
+    size = 4,
+    alpha = .9
+  ) +
+  ylab("relative frequencies") +
+  scale_y_continuous(# don't expand y scale at the lower end
+    expand = expansion(mult = c(0, 0.05))) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal",
+    legend.title = element_blank()
+  ) +
+  labs(title = "'Fearless' and 'Dangerously in Love' Compared",
+       subtitle = "Taylor Swift and Beyonce's Choice of Words in their Top Selling Albums Grouped by Sentiment", 
+       caption = "Created by @sergioaquinocan, Data from Rosie Baillie and Dr. Sara Stoudt, #TidyTuesday") +
+  labs(x = "Sentiment", y = "Percent") +
+  scale_fill_manual(values = fill) +
+  theme(
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = .7
+    ),
+    axis.text.x = element_text(colour = "black", size = 12),
+    axis.text.y = element_text(colour = "black", size = 12),
+    legend.key = element_rect(fill = "white", colour = "white"),
+    legend.position = "bottom",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    panel.grid.major = element_line(colour = "#d3d3d3"),
+    panel.grid.minor = element_line(colour = "#d3d3d3"),
+    panel.background = element_blank(),
+    plot.title = element_text(
+      size = 14,
+      family = "Tahoma",
+      face = "bold"
+    ),
+    #text = element_text(family = "Tahoma")
+  ) +
+  bgcolor("#f0f5f5") +
+  guides(fill = guide_legend(reverse = T))
+p1
+
+
+```
+
+
+# Save Image
+
+```{r}
+
+ggsave('SA projects/test.png', p1, scale=1, width=10, height=8,dpi=300)
+
+```
