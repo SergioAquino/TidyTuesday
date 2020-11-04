@@ -1,0 +1,132 @@
+---
+title: "Ikea Furniture, week # 45"
+date: 2020-10-26
+output: html_output
+---
+
+# Libraries and data
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(scales)
+library(showtext)
+
+theme_set(theme_light())
+
+tuesdata <- tidytuesdayR::tt_load(2020, week = 45)
+
+ikea.furniture <- tuesdata$ikea
+
+```
+
+
+# View data 
+
+```{r Load}
+dim(ikea.furniture)  #(3694,14)
+glimpse(ikea.furniture)
+#View(ikea.furniture)
+
+```
+
+
+# Most common designers
+
+```{r}
+
+ikea.furniture %>% 
+  count(designer, sort = T)
+
+```
+
+
+# Sellable online
+
+```{r}
+
+ikea.furniture %>% 
+  count(sellable_online, sort = T)
+
+```
+
+
+# Number of items per product category 
+
+```{r }
+
+ikea.furniture %>% 
+  count(category, sort = T)
+
+```
+
+
+# Does Ikea always market their prices down? Yes.
+
+```{r}
+
+prices <- ikea.furniture %>% 
+  filter(old_price != 'No old price' ) %>% 
+  separate(old_price, into = c("a1", "a2"), sep = "/") %>% 
+  separate(a1, into = c("a3", 'old.price'), sep = " ") %>% 
+  mutate(old.price= str_replace(old.price, ",", "")) %>% 
+  mutate(difference=as.numeric(old.price)-as.numeric(price)) %>% 
+  mutate(price.drop=(as.numeric(price)/as.numeric(old.price)-1)*-100) %>% 
+  select(item_id,category, old.price, price, difference, price.drop)
+prices
+
+prices[prices$price.drop < 0,] # all prices that changed were discounts
+
+```
+
+# Price drop by catagory (percent)
+
+```{r}
+
+fill <- "#0051BA"; line <- "#1F3552"
+p1 <- prices %>% 
+  group_by(category) %>% 
+  ggplot(aes(category, price.drop)) +
+  geom_boxplot(fill = fill, colour = line) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent_format(scale = 1))+
+  labs(title = "Ikea Saudi Arabia: Price Discount per Category",
+      subtitle = "Discount percent was calculated between the price before discount and the price on Ikea's website on 4/20/2020.",
+      caption = "Created by Sergio Aquino, Data from Kaggle, #TidyTuesday") +
+  labs(x = element_blank(), y = element_blank()) +
+  theme_minimal() +
+  theme(axis.line.x = element_line(size = .5, colour = "black"),
+axis.line.y = element_line(size = .5, colour = "black"),
+axis.text.x = element_text(colour = "black", size = 11, face = 'bold'),
+axis.text.y = element_text(colour = "black", size = 12, face = 'bold'),
+legend.position = "bottom",
+legend.direction = "horizontal",
+legend.box = "horizontal",
+legend.key = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.background = element_rect(fill = "#FFDA1A", colour = NA),
+axis.title.y = element_text(size=14, face = "bold"),
+#plot.background = element_rect(fill = "#FFDA1A", colour = NA),
+plot.title = element_text(
+      size = 16,
+      face = "bold"
+    ),
+plot.subtitle = element_text(size=14)) +
+geom_jitter() 
+
+```
+
+
+# Save Image
+
+```{r}
+
+# This will save your most recent plot
+ggsave(
+  filename = "Ikea_discounts_tt_week45.png", p1, scale=1, width=14, height=8,dpi=300)
+
+```
