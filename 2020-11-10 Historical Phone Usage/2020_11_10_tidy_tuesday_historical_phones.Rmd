@@ -51,7 +51,7 @@ landline.adoption <- landline %>%
   group_by(entity) 
 #View(landline.adoption)
 
-# Mobile phone adoption from 1990 to 2017.
+# Mobile phone adoption from 1990 to 2017
 mobile.adoption <- mobile %>% 
   filter(year  == 1991 | year == 2017) %>% 
   filter(continent == 'Europe') %>% 
