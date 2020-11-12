@@ -1,0 +1,122 @@
+---
+title: "Historical Phones"
+author: "Sergio Aquino"
+date: 2020-11-12
+output: html_output
+---
+
+# TidyTuesday
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(patchwork)
+library(scales)
+library(extrafont)
+library(here)
+
+```
+
+# Load weekly data
+
+```{r Load}
+
+tt <- tidytuesdayR::tt_load(2020, week = 46)
+
+landline <- tt$landline 
+mobile <- tt$mobile
+
+dim(landline)
+summary(landline)
+names(landline)
+landline %>% 
+  summarize(min=min(year), max=max(year))
+
+dim(mobile)
+names(landline)
+
+```
+
+# Explore change in landline and mobile subscriptions (per 100 people) from 1990 to 2017
+
+```{r Readme, eval = interactive()}
+
+# Landline adoption from 1990 to 2017
+landline.adoption <- landline %>% 
+  filter(year  == 1990 | year == 2017) %>% 
+  mutate(pct_change = (landline_subs/lag(landline_subs) - 1) * 100) %>% 
+  group_by(entity) 
+#View(landline.adoption)
+
+# Mobile adoption from 1990 to 2017
+mobile.adoption <- mobile %>% 
+  filter(year  == 1991 | year == 2017) %>% 
+  filter(continent == 'Europe') %>% 
+  group_by(code,entity) %>% 
+  mutate(pct_change = (mobile_subs/lag(mobile_subs) - 1) * 100)
+#View(mobile.adoption)
+
+#Selected 'FIN', 'DEU','AUT' based on landline retention.
+
+```
+
+# Initial plots
+
+```{r }
+
+p1 <- landline %>% 
+  filter(code %in% c('FIN', 'DEU','AUT') & !is.na(landline_subs)) %>% 
+  ggplot(aes(year, landline_subs)) +
+  geom_line(aes(color = code, linetype = code, size = .4)) + 
+  scale_color_manual(values = c("darkred", "steelblue",'red')) +
+  labs(title = "Landline Subscription",
+       subtitle = "Austria, Germany, Finland (per 100 people)",
+       y="subscription") +
+   scale_y_continuous(limits = c(0, 80)) +
+   scale_x_continuous(limits = c(1990, 2020)) +
+   theme_gray() +
+   theme(legend.position = "none") 
+  
+
+p2 <- mobile %>% 
+  filter(code %in% c('FIN', 'DEU','AUT')) %>% 
+  ggplot(aes(year, mobile_subs)) +
+  geom_line(aes(color = code, linetype = code, size=.6)) + 
+  guides(size = FALSE) +
+  scale_color_manual(values = c("darkred", "steelblue",'red')) +
+  labs(title = "Mobile Subscription",
+        subtitle = "Austria, Germany, Finland (per 100 people)",
+        y="subscription") +
+  scale_y_continuous(limits = c(0, 200)) +
+  scale_x_continuous(limits = c(1990, 2020)) +
+  theme_gray() 
+    
+```
+
+# Final Plot
+
+```{r Visualize}
+
+p3 <- (p1 | p2)  +
+   plot_annotation(title = 'Landline and Mobile Phones in Europe from 1990 to 2017',
+                 subtitle = 'Similar mobile phone adoption rates, but different landline retention',
+                 caption = "Sergio Aquino | Data: OurWorldInData.org | #TidyTuesday",
+                  theme = theme(plot.title = element_text(size = 16, face="bold"),
+                                plot.subtitle =element_text(size = 14)))&
+                 
+                              
+  theme(text = element_text('Calibri Light')) +
+  theme(plot.background=element_rect(fill="#ffffff")) #f2f2f2
+p3
+
+```
+
+```{r}
+
+# This will save your most recent plot
+ggsave(filename = "HistoricalPhoneUsage.png", p3, scale=1, width=14, height=10,dpi=300)
+
+```
