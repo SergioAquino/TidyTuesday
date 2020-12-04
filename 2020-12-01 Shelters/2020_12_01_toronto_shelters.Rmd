@@ -1,0 +1,206 @@
+---
+title: "Washington Hiking"
+author: "Sergio Aquino"
+date: 2020-11-30
+output: html_output
+---
+
+# Import libraries
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(RColorBrewer)
+library(gridExtra)
+library(grid)
+#library(gt)
+library(here)
+
+```
+
+# Load weekly data
+
+```{r Load}
+
+tt <- tidytuesdayR::tt_load(2020, week = 49)
+
+shelters <- tt$shelters
+
+dim(shelters)
+names(shelters)
+#View(shelters)
+
+```
+
+# min max occupancy dates and shelter outside ON?
+
+```{r}
+
+shelters %>% 
+  summarize(min = min(occupancy_date), 
+            max = max(occupancy_date),
+            province = sum(shelter_province != 'ON'))
+
+```
+
+# shelter capacity by sector from 2016 (2017-01-10 due to seasonality) to 2019-12-31
+
+```{r}
+
+t1 <- shelters %>% 
+  filter(shelter_postal_code != 'NA', lubridate::as_date(occupancy_date) == '2017-01-10', capacity != 0) %>% 
+  group_by(sector) %>% 
+  summarize('2016'=sum(capacity)) %>% 
+  ungroup()  
+
+t2 <- shelters %>% 
+  filter(shelter_postal_code != 'NA', lubridate::as_date(occupancy_date) == '2017-12-31', capacity != 0) %>% 
+  group_by(sector) %>% 
+  summarize('2017'=sum(capacity)) %>% 
+  ungroup()  
+
+t3 <- shelters %>% 
+  filter(shelter_postal_code != 'NA', lubridate::as_date(occupancy_date) == '2018-12-31', capacity != 0) %>% 
+  group_by(sector) %>% 
+  summarize('2018'=sum(capacity)) %>% 
+  ungroup()  
+
+t4 <- shelters %>% 
+  filter(shelter_postal_code != 'NA', lubridate::as_date(occupancy_date) == '2019-12-31', capacity != 0) %>% 
+  group_by(sector) %>% 
+  summarize('2019'=sum(capacity)) %>% 
+  ungroup()  
+
+tt <- t1 %>% inner_join(t2, by = 'sector') %>%
+  inner_join(t3, by = 'sector') %>%
+  inner_join(t4, by = 'sector') %>%
+  pivot_longer(cols = starts_with("20"),
+   names_to = "year",
+   values_to = "capacity")
+
+```
+
+# graph sector capacity growth per year
+
+```{r}
+
+p1 <- tt %>% 
+  ggplot(aes(x = year, y = capacity, group = sector, color = sector)) +
+  geom_line() + 
+  geom_point() +
+  labs(title = "Toronto Shelters by Sector",
+               subtitle = "Shelter capacity growth from 2016 to 2019",
+               x = '',
+               caption = ""
+               ) +
+  theme_gray() 
+  
+          
+p1
+
+```
+
+# shelter capacity by postal code: 2019 and 2016 comparison of the top 10 postal codes
+
+```{r}
+
+shelters$shelter_postal_code[shelters$shelter_postal_code == 'M5A-2N2'] <- 'M5A 2N2'
+shelters$shelter_postal_code[shelters$shelter_postal_code == 'M6J1E6'] <- 'M6J 1E6'
+
+u2 <- shelters %>% 
+  filter(shelter_postal_code != 'NA', lubridate::as_date(occupancy_date) == '2019-12-31', capacity != 0) %>% 
+  group_by(shelter_postal_code) %>% 
+  summarize(capacity_2019=sum(capacity)) %>% 
+  arrange(-capacity_2019) %>% 
+  head(10)
+
+u1 <- shelters %>% 
+  filter(shelter_postal_code != 'NA', lubridate::as_date(occupancy_date) == '2017-01-10', capacity != 0, shelter_postal_code %in% u2$shelter_postal_code) %>% 
+  group_by(shelter_postal_code) %>% 
+  summarize(capacity_2016=sum(capacity)) %>% 
+  arrange(-capacity_2016) 
+
+## table
+p2 <- u1 %>%  
+  full_join(u2, by='shelter_postal_code') %>% 
+  mutate('Change (%)' = round((capacity_2019/capacity_2016 - 1)*100,1)) %>% 
+  rename('Postal Code'=shelter_postal_code, '2016'= capacity_2016, '2019'= capacity_2019) 
+
+# Could not combine GT() and plot
+
+  # column_to_rownames(var = "Postal Code") %>% 
+  # gt(rowname_col = 'Postal Code', rownames_to_stub = TRUE) %>% 
+  # tab_stubhead(label = "Postal Code") %>% 
+  # tab_spanner(
+  #   label = "Capacity",
+  #   columns = vars('2016','2019')
+  # ) %>%
+  # tab_header(
+  #   title = md("**Shelter Capacity by Postal Code: Top Ten Shelters in 2019**"),
+  #   subtitle = md("Dates compared: 2017-01-10 and 2019-12-31")
+  # ) %>% 
+  # tab_options(data_row.padding = px(5)) %>% 
+  # tab_options(
+  #   heading.title.font.weight = 'bold',
+  #   heading.title.font.size = "large",
+  #   heading.subtitle.font.size = "medium"
+  # ) %>% 
+  # cols_align(
+  #   align = "left",
+  #   columns = vars('Change (%)')
+  # ) %>% 
+  # cols_align(
+  #   align = "left",
+  #   columns = vars('2019')
+  # ) %>% 
+  #  cols_align(
+  #   align = "left",
+  #   columns = vars('2016')
+  # ) 
+
+```
+
+# combine 
+
+```{r}
+
+(
+  p2 <- tableGrob(
+    p2,
+    theme = ttheme_default(
+      base_size = 10,
+      base_colour = "grey25",
+      parse = T
+    ),
+    rows = NULL
+  )
+)
+
+title = "\nThe Changing Dynamics of Toronto Shelters\nSectors and Postal Codes by Capacity\n"
+p3 <- grid.arrange(p1, p2, ncol=2,
+             widths = c(25,20),
+             top= textGrob(title, gp = gpar(fontsize = 14, fontface = 'bold')
+                   ),
+             
+             bottom = textGrob("\nSergio Aquino | Data: open.toronto.ca | #TidyTuesday",
+                           x = 0.45,
+                           y = 0.7,
+                           just = "left"))
+             
+```
+
+# save image
+
+```{r}
+
+# This will save your most recent plot
+ggsave(filename = "TorontoShelters.png", p3, scale=.8, width=10, height=6, dpi=300)
+
+```
+
+
+
+
