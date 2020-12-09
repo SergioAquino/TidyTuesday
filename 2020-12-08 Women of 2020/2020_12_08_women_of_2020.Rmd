@@ -1,0 +1,100 @@
+---
+title: "Women of 2020"
+author: "Sergio Aquino"
+date: 2020-12-08
+output: html_output
+---
+
+# Import libraries
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytext)
+library(tidytuesdayR)
+library(RColorBrewer)
+library(grid)
+library(here)
+library(wordcloud2)
+library(webshot)
+webshot::install_phantomjs()
+
+
+```
+
+# Load weekly data
+
+```{r Load}
+
+tt <- tidytuesdayR::tt_load(2020, week = 50)
+
+women2020 <- tt$women
+
+dim(women2020)
+names(women2020)
+#View(women2020)
+
+```
+
+# Explore variables with count
+
+```{r}
+
+women2020 %>% 
+  count(category, sort = T)
+
+women2020 %>% 
+  count(country, sort = T)
+
+women2020 %>% 
+  count(role, sort=T)
+
+```
+
+# how to describe an activist
+
+```{r}
+
+# description of all types of activists
+activist.desc <- women2020 %>% 
+  mutate(role = str_to_lower(role)) %>% 
+  filter(str_detect(role,'activist' )) %>% 
+  select(description)
+
+characters <- data.frame(word = c('activist', 'activists'))
+
+# count of words
+activist.words <- activist.desc %>% 
+  unnest_tokens(word, description) %>%  
+  anti_join(stop_words, by = "word") %>%
+  anti_join(characters, by = 'word') %>% 
+  #mutate(word = wordStem(word)) %>%
+  count(word, sort = TRUE)
+
+# which colors to use
+brewer.pal(8, 'Set3')
+
+# wordplot2
+uxc.colors = c("#ffffff", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", "#B3DE69","#FCCDE5")
+uxc.background = "#00ccff"
+p1 <- wordcloud2(data=activist.words, color = uxc.colors, backgroundColor = uxc.background, size=1.6) 
+
+```
+# saving the wordcloud
+
+```{r}
+
+# save it in html
+library("htmlwidgets")
+saveWidget(p1,"tmp.html",selfcontained = F)
+
+# and in png or pdf
+webshot("tmp.html","women2020.png", delay =5, vwidth = 1500, vheight=900)
+
+```
+
+
+
+
