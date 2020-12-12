@@ -83,4 +83,5 @@ p3
 ```{r}
 
 ggsave(p3, dpi = 100, width = 22, height = 12, units = "cm", filename = "WA Trails.jpeg", device = "jpeg")
+
 ```
