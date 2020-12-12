@@ -21,8 +21,8 @@ library(wordcloud2)
 library(webshot)
 webshot::install_phantomjs()
 
-
 ```
+
 
 # Load weekly data
 
@@ -94,7 +94,3 @@ saveWidget(p1,"tmp.html",selfcontained = F)
 webshot("tmp.html","women2020.png", delay =5, vwidth = 1500, vheight=900)
 
 ```
-
-
-
-

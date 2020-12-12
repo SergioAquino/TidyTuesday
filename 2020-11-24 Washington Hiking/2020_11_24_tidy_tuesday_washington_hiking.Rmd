@@ -78,7 +78,7 @@ p3
 
 ```
 
-# Saving wordcloud
+# Saving wordcloud a jpeg
 
 ```{r}
 
