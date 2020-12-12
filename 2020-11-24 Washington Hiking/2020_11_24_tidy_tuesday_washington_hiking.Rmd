@@ -1,0 +1,86 @@
+---
+title: "Washington Hiking"
+author: "Sergio Aquino"
+date: 2020-11-30
+output: html_output
+---
+
+# Import libraries
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggforce)
+library(tidytext)
+library(SnowballC)
+library(ggwordcloud)
+library(patchwork)
+library(showtext)
+library(png)
+
+```
+
+# Load weekly data
+
+```{r Load}
+
+tt <- tidytuesdayR::tt_load(2020, week = 48)
+
+hike <- tt$hike_data
+
+dim(hike)
+names(hike)
+#View(hike)
+
+```
+
+# Wordcloud
+
+```{r Readme, eval = interactive()}
+
+characters <- data.frame(word = c('Trail', 'trails','trail','hike'))
+
+hike_desc <- hike %>% 
+  unnest_tokens(word, description) %>% 
+  anti_join(characters, by = "word") %>%
+  anti_join(stop_words, by = "word") %>% 
+  mutate(word = wordStem(word)) %>%
+  count(word, sort = TRUE) %>% 
+  head(220)
+
+wordcloud <- hike_desc %>%
+  ggplot(aes(label = word, size = n, 
+      color=n, replace = TRUE))+
+  geom_text_wordcloud_area(rm_outside = TRUE)+
+  scale_size_area(max_size = 25) +
+  theme_minimal()+
+  theme(plot.background = element_rect(fill = "#ffffff", colour = "#1aa3ff"))
+
+```
+
+
+# Final plot with title, subtitle, and caption
+
+```{r Visualize}
+
+p3 <- (wordcloud)  +
+   plot_annotation(title = 'Popular Words Used in the Description of Washington Trails',
+                 subtitle = 'The words trail and hike were excluded. Used root words',
+                 caption = "Sergio Aquino | Data: Washington Trails Association | #TidyTuesday",
+                  theme = theme(plot.title = element_text(size = 17, face="bold"),
+                                plot.subtitle =element_text(size = 14)))&
+                 
+                              
+  theme(text = element_text('sans')) +
+  theme(plot.background=element_rect(fill="#ffffff")) 
+p3
+
+```
+# Saving plot
+
+```{r}
+
+ggsave(p3, dpi = 100, width = 18, height = 10, units = "cm", filename = "BBCWomen2020.jpeg", device = "jpeg")
+```
