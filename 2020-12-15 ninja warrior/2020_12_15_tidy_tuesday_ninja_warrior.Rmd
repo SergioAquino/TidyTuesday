@@ -1,0 +1,147 @@
+---
+title: "Ninja Warrior"
+author: "Sergio Aquino"
+date: 2020-12-15
+output: html_output
+---
+
+# TidyTuesday
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(cowplot)
+library(ggpubr)
+library(patchwork)
+
+```
+
+# Load the weekly Data
+
+```{r Load}
+
+tt <- tt_load("2020-12-15")
+ninja <- tt$ninja_warrior
+
+dim(ninja)
+glimpse(ninja)
+names(ninja)
+#View(ninja)
+
+```
+
+
+# Explore dataset
+
+```{r Readme, eval = interactive()}
+
+#seaseon
+ninja %>% 
+  count(season, sort = T)
+
+#location
+ninja %>% 
+  count(location, sort = T)
+
+#round stage
+ninja %>% 
+  count(round_stage, sort = T)
+
+#obstacle_order
+ninja %>%
+  group_by(obstacle_name) %>% 
+  count(obstacle_order) 
+
+
+```
+
+# Which season had the most number of obstacles
+
+```{r }
+
+a <- ninja %>% 
+  group_by(season) %>% 
+  summarize(number_obstacles = n())
+  
+```
+
+# Number of distinct obstacles per season
+
+```{r}
+
+b <- ninja %>% 
+  group_by(season) %>% 
+  summarize(distinct_obstacles = n_distinct(obstacle_name))
+
+```
+
+# Combining the two results
+
+```{r}
+
+p1 <- a %>% 
+  inner_join(b, by='season') %>% 
+  ggplot(aes(number_obstacles,distinct_obstacles)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se=F) +
+  annotate("text", x = 74, y = 41, label = "r = .89",
+           hjust = 0, size = 5, color = "#000000") +
+  labs(title = "The Amazing Ninja Warrior Obstacles",
+               subtitle = "Obstacles were repeated as seosons incorporated more of them.",
+               caption = "Sergio Aquino | Data: Sasukepedia | #TidyTuesday",
+               x = 'Obstacles per Season',
+               y = "Distinct Obstacles"
+               ) +
+          scale_color_manual(values = c("darkred", "steelblue")) +
+          theme_minimal_grid() +
+          theme(axis.text.x=element_text(size=rel(0.75))) +
+          border(color = "black", size = 0.8, linetype = NULL) +
+          bgcolor("#e1eaea")
+p1
+
+
+```
+# Most used obstacles in all seasons 
+
+```{r}
+
+p2 <- ninja %>% 
+  count(obstacle_name, sort = T) %>% 
+  head(10) %>% 
+  ggplot(aes(fct_reorder(obstacle_name, n),n)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(title = "Popular Obstacles",
+         x = "",
+               y = "Times Used in All Seasons",
+       theme_classic(base_size = 25))
+              
+              
+
+p1 + inset_element(p2, .08, 0.47, 0.4, .87, align_to = 'full')
+
+```
+
+# Visualize
+
+```{r Visualize}
+
+a %>% 
+  inner_join(b, by='season') %>% 
+  summarize(corr = cor(number_obstacles, distinct_obstacles))
+
+```
+
+# Save Image
+
+```{r}
+
+# This will save your most recent plot
+ggsave(
+  filename = "Ninja Obstacles.png",
+  device = "png", scale=1, width=11, height=7,dpi=300)
+
+```
