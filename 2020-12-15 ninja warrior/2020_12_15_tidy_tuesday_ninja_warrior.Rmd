@@ -29,7 +29,7 @@ ninja <- tt$ninja_warrior
 dim(ninja)
 glimpse(ninja)
 names(ninja)
-#View(ninja)
+
 
 ```
 
@@ -90,7 +90,7 @@ p1 <- a %>%
   annotate("text", x = 74, y = 41, label = "r = .89",
            hjust = 0, size = 5, color = "#000000") +
   labs(title = "The Amazing Ninja Warrior Obstacles",
-               subtitle = "Obstacles were repeated as seosons incorporated more of them.",
+               subtitle = "Obstacles were repeated as seasons incorporated more of them.",
                caption = "Sergio Aquino | Data: Sasukepedia | #TidyTuesday",
                x = 'Obstacles per Season',
                y = "Distinct Obstacles"
