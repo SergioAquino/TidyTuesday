@@ -1,0 +1,96 @@
+---
+title: "Kenyan Census"
+author: "Sergio Aquino"
+date: 2021-01-19
+output: html_output
+---
+
+# TidyTuesday
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(fmsb)
+
+```
+
+# Load the weekly Data
+
+```{r }
+
+tuesdata <- tidytuesdayR::tt_load(2021, week = 4)
+household <- tuesdata$households
+crops <- tuesdata$crops
+gender <- tuesdata$gender
+
+dim(crops)
+glimpse(crops)
+names(crops)
+#View(crops)
+
+```
+
+# Create radar plot and saves as pdf
+
+```{r}
+
+# create dataframe with crops data
+data <-
+  as.data.frame(matrix(
+    c(
+      476613,
+      478936,
+      966976,
+      177445,
+      796867,
+      90952,
+      195999,
+      61664,
+      134148
+    ),
+    ncol = 9
+  ))
+colnames(data) <-
+  c(
+    "Tea",
+    "Coffee",
+    "Avocado",
+    "Citrus",
+    "Mango",
+    "Coconut",
+    "Macadamia",
+    "Cashew Nut",
+    "Khat(Miraa)"
+  )
+
+# lines to the dataframe: the max and min of each topic to show on the plot!
+data <- rbind(rep(1000000, 9) , rep(0, 9) , data)
+
+# custom the radarChart !
+radarchart(
+  data  ,
+  axistype = 2,
+  
+  #custom polygon
+  pcol = rgb(0.2, 0.5, 0.5, 0.9) ,
+  pfcol = rgb(0.2, 0.5, 0.5, 0.5) ,
+  plwd = 5 ,
+  
+  #custom the grid
+  cglcol = "darkgray",
+  cglty = 1,
+  axislabcol = "grey",
+  caxislabels = seq(0, 20, 5),
+  cglwd = 0.8,
+  
+  #custom labels
+  vlcex = 0.9,
+  title = '\nKenyan Households Growing Permanent Crops\nSergio Aquino | Data: rKenyaCensus | #TidyTuesday'
+  
+) 
+dev.print(device=pdf,"Kenyan Households Growing Permanent Crops.pdf",width=10,height=10)
+```
+
