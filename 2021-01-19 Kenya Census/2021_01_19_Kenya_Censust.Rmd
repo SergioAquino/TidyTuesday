@@ -29,7 +29,7 @@ gender <- tuesdata$gender
 dim(crops)
 glimpse(crops)
 names(crops)
-#View(crops)
+View(crops)
 
 ```
 
