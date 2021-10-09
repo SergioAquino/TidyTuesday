@@ -28,7 +28,7 @@ nurses <- tuesdata$nurses
 
 ## Create table to plot
 ```{r }
-nurses <- rename(nurses, name = State) %>%
+nurses <- rename(nurses,name = State) %>%
   filter(Year == 2019) %>%
   select(c(1:3))
 
@@ -52,33 +52,49 @@ rn.nurses.per.pop <- nurses.pop.coord %>%
 background <- "#ffffff"
 titlefont = "Montserrat"
 textfont = "Montserrat"
-font_add_google("Crete Round")
 ```
 
 ## Create plot
 ```{r}
 p <- plot_usmap(data = rn.nurses.per.pop , values = "rn.per.state") +
-  labs(size = "total employed nurses",
-       x = "annual salary",
-       y = NULL,
-       title = "Annual Salary Per State in 2000 & 2020",
-       subtitle = "Dots refer to annual median salary, and the left end 25% percentile and the right 75% percentile.\nThe size of dots refers to total employed registered nurses") +
-   theme_void() +
-  #transition_states(Year,  transition_length = 2, state_length = 1) +
-  theme(legend.position = "right") +  
-  #coord_fixed(1.3) +
-  ggtitle("Employed Registered Nurses Per State Population", subtitle = 'RN per 1,000 population - 2019') + 
-  labs(caption="Sergio Aquino | Data: Data.World, US Cansus | TidyTuesday") +
-  theme(plot.title = element_text(family= titlefont, face="bold", hjust=0.5, size=18, color="#000099"),
-        plot.subtitle = element_text(family= titlefont, hjust=0.5, size=14, color="#000099"),
-        plot.background = element_rect(fill=background, color=background),
-        plot.caption = element_text(hjust = 0.5, size=11, family=textfont, color="#000099"),
-        legend.position = c(1.0, 0.3125),
-        legend.key.size = unit(1, 'cm'),
-        legend.text = element_text(size = 8, color="grey35"),
-        legend.direction = "vertical",
-        legend.title = element_blank(),
-        plot.margin = margin(0.5, 0.5, 0.25, 0.5, "cm"))
+  labs(
+    size = "total employed nurses",
+    x = "annual salary",
+    y = NULL
+  ) +
+  theme_void() +
+  theme(legend.position = "right") +
+  ggtitle("Employed Registered Nurses by State Population", subtitle = 'RN per 1,000 population - 2019') +
+  labs(caption = "Sergio Aquino | Data: Data.World, US Census | TidyTuesday") +
+  theme(
+    plot.title = element_text(
+      family = titlefont,
+      face = "bold",
+      hjust = 0.5,
+      size = 18,
+      color = "#16537e"
+    ),
+    plot.subtitle = element_text(
+      family = titlefont,
+      hjust = 0.5,
+      size = 14,
+      color = "#16537e"
+    ),
+    plot.background = element_rect(fill = background, color = background),
+    plot.caption = element_text(
+      hjust = 0.5,
+      size = 11,
+      family = textfont,
+      color = "#16537e"
+    ),
+    legend.position = c(1.0, 0.3125),
+    legend.key.size = unit(1, 'cm'),
+    legend.text = element_text(size = 8, color = "grey35"),
+    legend.direction = "vertical",
+    legend.title = element_blank(),
+    plot.margin = margin(0.5, 0.5, 0.25, 0.5, "cm")
+  ) +
+  scale_fill_gradient(low = "#56B1F7", high = "#132B4B")
 ```
 
 
@@ -86,4 +102,30 @@ p <- plot_usmap(data = rn.nurses.per.pop , values = "rn.per.state") +
 ```{r}
 ggsave('RegisteredNurses.png', p, scale=1, width=12, height=8,dpi=300)
 ```
+## Compare RN per 1000 people with state GDP
+
+## Import 
+```{r}
+library("httr")
+library("readxl")
+GET("https://query.data.world/s/kqbsxwi2v3j6xi6vxpxzm5aw3oms3p", write_disk(tf <- tempfile(fileext = ".xls")))
+df <- read_excel(tf)
+df1 <- rename(df, name = "...1") %>% select(1,20)
+```
+
+## Join with rn,nurses,per.pop and plot
+```{r}
+p1 <- rn.nurses.per.pop %>% inner_join(df1) 
+
+a <- p1$rn.per.state
+class(a)
+b <- p1$`2015`
+class(b)
+
+  ggplot(p1, aes(a,log(b))) +
+  geom_point()
+p1
+```
+
+
 
