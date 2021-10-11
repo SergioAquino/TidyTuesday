@@ -1,0 +1,39 @@
+---
+title: "Video Games"
+author: "Sergio Aquino"
+date: 2021-03-16
+output: html_output
+---
+
+# TidyTuesday
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Load the weekly Data
+
+```{r }
+install.packages("nberwp")
+
+library(nberwp)
+```
+
+# Load the different tables
+
+```{r}
+authors <- nberwp::authors
+paper.authors <- nberwp::paper_authors
+paper.programs <- nberwp::paper_programs
+papers <- nberwp::papers
+programs <- nberwp::programs
+```
+
+#
+
+```{r}
+
+```
+
