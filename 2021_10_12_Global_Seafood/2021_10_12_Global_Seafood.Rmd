@@ -1,0 +1,146 @@
+---
+title: "2021_10_05_Global_Seafood"
+author: "Sergio Aquino"
+date: "05/10/2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999)
+```
+
+
+## Import libraries
+
+```{r, include=FALSE}
+# Libraries
+library(tidyverse)
+library(janitor)
+library(patchwork) 
+library(hrbrthemes)
+library(scales)
+```
+
+
+## Import data: consumption and country population
+
+```{r, include=FALSE }
+farmed <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-12/aquaculture-farmed-fish-production.csv')
+captured_vs_farmed <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-12/capture-fisheries-vs-aquaculture.csv')
+captured <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-12/capture-fishery-production.csv')
+stock <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-12/fish-stocks-within-sustainable-levels.csv')
+fishery <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-12/global-fishery-catch-by-sector.csv')
+production <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-12/seafood-and-fish-production-thousand-tonnes.csv')
+
+consumption <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-12/fish-and-seafood-consumption-per-capita.csv') %>% 
+  clean_names()
+
+pop <- readr::read_csv("data/UN-population-projection-medium-variant.csv") %>% 
+  clean_names() 
+
+pop.consumption <- consumption %>% 
+  inner_join(pop) %>% 
+  rename(consumption = fish_seafood_food_supply_quantity_kg_capita_yr_fao_2020,
+         population = estimates_1950_2020_total_population_by_broad_age_group_both_sexes_combined_thousands_total)
+```
+
+## Who are the big consumers?
+
+```{r}
+big.consumers <- pop.consumption %>% 
+  filter(year == 2017) %>% 
+  mutate(total = consumption*population) %>% 
+  arrange(desc(total)) %>% 
+  select(entity, total)
+
+big.consumers
+```
+
+## Import fonts
+
+```{r}
+background <- "#ffffff"
+titlefont = "Montserrat"
+textfont = "Montserrat"
+```
+
+## Plot population growth and fish consumption 
+
+```{r}
+china <- pop.consumption %>% 
+  filter(code == "CHN") 
+
+indonesia <- pop.consumption %>% 
+  filter(code == "IDN")
+
+japan <- pop.consumption %>% 
+  filter(code == "JPN") 
+```
+
+## Plot populational and consumption graphs
+
+```{r}
+# Most basic line chart
+p1 <- ggplot(china, aes(x=year, y=population)) +
+  geom_line(color="#69b3a2", size=2) +
+  ggtitle("China: Population Growth") +
+  theme_ipsum() +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6)) +
+  scale_x_continuous(limits = c(1960, 2020))
+  
+p2 <- ggplot(china, aes(x=year, y=consumption)) +
+  geom_line(color="grey",size=2) +
+  ggtitle("China: Fish and Seafood Consumption") +
+  theme_ipsum() +
+  scale_y_continuous(labels = unit_format(unit = "kg/capita")) +
+  scale_x_continuous(limits = c(1960, 2020))
+  
+p3 <- ggplot(indonesia, aes(x=year, y=population)) +
+  geom_line(color="#69b3a2", size=2) +
+  ggtitle("Indonesia: Population Growth") +
+  theme_ipsum() +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6)) +
+  scale_x_continuous(limits = c(1960, 2020))
+  
+p4 <- ggplot(indonesia, aes(x=year, y=consumption)) +
+  geom_line(color="grey",size=2) +
+  ggtitle("Indonesia: Fish and Seafood Consumption") +
+  theme_ipsum() +
+  scale_y_continuous(labels = unit_format(unit = "kg/capita")) +
+  scale_x_continuous(limits = c(1960, 2020))
+
+p5 <- ggplot(japan, aes(x=year, y=population)) +
+  geom_line(color="#69b3a2", size=2) +
+  ggtitle("Japan: Population Growth") +
+  theme_ipsum() +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6)) +
+  scale_x_continuous(limits = c(1960, 2020))
+  
+p6 <- ggplot(japan, aes(x=year, y=consumption)) +
+  geom_line(color="grey",size=2) +
+  ggtitle("Japan: Fish and Seafood Consumption") +
+  theme_ipsum() +
+  scale_y_continuous(labels = unit_format(unit = "kg/capita"), breaks = c(40,50,60,70)) +
+  scale_x_continuous(limits = c(1960, 2020))
+  
+
+# Display both charts side by side thanks to the patchwork packages
+patchwork <- (p1 + p2)/(p3+p4)/(p5+p6)
+
+p <- patchwork + plot_annotation(
+  title = 'Who Will Ask China and Indonesia to Eat Less Fish?',
+  subtitle = 'Are there any lessons to be learned from Japan? ',
+  caption = 'Sergio Aquino | Data: OWID | @TidyTuesday', 
+  theme = theme(plot.title = element_text(size = 20))) & 
+  theme(text = element_text(titlefont))
+```
+
+## Save plot
+```{r}
+ggsave('Global Seafood Consumption.png', p, scale=1, width=15, height=10,dpi=300)
+```
+
+
+
