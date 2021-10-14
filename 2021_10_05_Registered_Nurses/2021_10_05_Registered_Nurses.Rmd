@@ -1,0 +1,131 @@
+---
+title: "2021_10_05_Registered_Nurses"
+author: "Sergio Aquino"
+date: "05/10/2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+## Import libraries
+```{r}
+library(tidyverse)
+library(sysfonts)
+library(usmap)
+```
+
+
+## Import data
+```{r }
+tuesdata <- tidytuesdayR::tt_load(2021, week = 41)
+nurses <- tuesdata$nurses
+```
+
+## Create table to plot
+```{r }
+nurses <- rename(nurses,name = State) %>%
+  filter(Year == 2019) %>%
+  select(c(1:3))
+
+pop_state <- read_csv("nst-est2019-alldata.csv")
+pop_state <- rename(pop_state, name = NAME) %>%
+  select(name, POPESTIMATE2019)
+
+nurses.pop <- inner_join(nurses, pop_state,by= "name")
+
+coord <- read_csv("us_states_coordinates.csv")
+nurses.pop.coord <- inner_join(nurses.pop, coord, by="name")
+
+rn.nurses.per.pop <- nurses.pop.coord %>% 
+  mutate(rn.per.state = `Total Employed RN`/POPESTIMATE2019 * 1000) %>%
+  select(2,1,5,3,4,8,6,7)
+```
+
+## Import fonts
+
+```{r}
+background <- "#ffffff"
+titlefont = "Montserrat"
+textfont = "Montserrat"
+```
+
+## Create plot
+```{r}
+p <- plot_usmap(data = rn.nurses.per.pop , values = "rn.per.state") +
+  labs(
+    size = "total employed nurses",
+    x = "annual salary",
+    y = NULL
+  ) +
+  theme_void() +
+  theme(legend.position = "right") +
+  ggtitle("Employed Registered Nurses by State Population", subtitle = 'RN per 1,000 population - 2019') +
+  labs(caption = "Sergio Aquino | Data: Data.World, US Census | TidyTuesday") +
+  theme(
+    plot.title = element_text(
+      family = titlefont,
+      face = "bold",
+      hjust = 0.5,
+      size = 18,
+      color = "#16537e"
+    ),
+    plot.subtitle = element_text(
+      family = titlefont,
+      hjust = 0.5,
+      size = 14,
+      color = "#16537e"
+    ),
+    plot.background = element_rect(fill = background, color = background),
+    plot.caption = element_text(
+      hjust = 0.5,
+      size = 11,
+      family = textfont,
+      color = "#16537e"
+    ),
+    legend.position = c(1.0, 0.3125),
+    legend.key.size = unit(1, 'cm'),
+    legend.text = element_text(size = 8, color = "grey35"),
+    legend.direction = "vertical",
+    legend.title = element_blank(),
+    plot.margin = margin(0.5, 0.5, 0.25, 0.5, "cm")
+  ) +
+  scale_fill_gradient(low = "#56B1F7", high = "#132B4B")
+```
+
+
+## Save plot
+```{r}
+ggsave('RegisteredNurses.png', p, scale=1, width=12, height=8,dpi=300)
+```
+## Compare RN per 1000 people with state GDP
+
+## Import 
+```{r}
+library("httr")
+library("readxl")
+GET("https://query.data.world/s/kqbsxwi2v3j6xi6vxpxzm5aw3oms3p", write_disk(tf <- tempfile(fileext = ".xls")))
+df <- read_excel(tf)
+df1 <- rename(df, name = "...1") %>% select(1,20)
+```
+
+## Join with rn,nurses,per.pop and plot
+```{r}
+p1 <- rn.nurses.per.pop %>% inner_join(df1) 
+
+a <- p1$rn.per.state
+class(a)
+b <- p1$`2015`
+class(b)
+
+  ggplot(p1, aes(a,log(b))) +
+  geom_point()
+p1
+```
+
+
+
