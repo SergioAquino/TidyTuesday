@@ -79,7 +79,7 @@ japan <- pop.consumption %>%
   filter(code == "JPN") 
 ```
 
-## Plot populationa and consumption graphs
+## Plot populational and consumption graphs
 
 ```{r}
 # Most basic line chart
