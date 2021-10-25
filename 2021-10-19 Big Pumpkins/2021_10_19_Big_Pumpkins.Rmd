@@ -1,0 +1,143 @@
+---
+title: "Big Pumpkins"
+author: "Sergio Aquino"
+date: "18/10/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+
+```{r }
+library(tidyverse)
+library(ggfortify)
+```
+
+## Import data and clean it
+
+```{r pressure, echo=FALSE}
+pumpkins <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-10-19/pumpkins.csv')
+
+pumpkins_clean1 <- pumpkins %>% 
+                      separate(col = id, 
+                               into = c("year", "type"),
+                               sep = "-")
+
+pumpkins_clean2 <- pumpkins_clean1 %>% mutate(type = case_when(
+  type=="F" ~ "Field Pumpkin",
+  type=="P" ~ "Giant Pumpkin",
+  type=="S" ~ "Giant Squash",
+  type=="W" ~ "Giant Watermelon",
+  type=="L" ~ "Long Gourd",
+  type=="T" ~ "Tomato"
+)) 
+
+pumpkins_giant <- pumpkins_clean2 %>% 
+          mutate(#year = parse_number(year),
+          weight_lbs = parse_number(weight_lbs),
+          ott = parse_number(ott),
+          est_weight = parse_number(est_weight),
+          pct_chart = parse_number(pct_chart)) %>% 
+          filter(type == 'Giant Pumpkin', est_weight>0, ott>0) 
+
+```
+
+## Look at the data and check how many NAs
+
+```{r}
+glimpse(pumpkins_giant)  
+
+pumpkins_giant %>% 
+  summarize(across(everything(),
+            ~sum(is.na(.x))))
+```
+
+
+## Does pumpkin weight increase over time?
+
+```{r}
+
+pumpkins_giant %>% 
+  filter(type == "Giant Pumpkin") %>% 
+  ggplot() +
+  geom_violin(aes(x = year, y = weight_lbs, fill = year),draw_quantiles = c(0.25, 0.5, 0.75) )+
+   guides(fill=guide_legend(title="Year")) +
+  labs(title = "Does pumpkin weight increase over time?", subtitle = "Peaks do, but percentile don't") +
+  theme_bw()
+
+
+```
+
+## Explore data
+
+## Plot giant pumpkin weight and estimate and transform data
+
+```{r}
+pumpkins_giant %>% 
+  ggplot(aes(est_weight, weight_lbs)) +
+  geom_point(aes(color = year)) +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(
+    title = "Great Pumpkins: Estimated and Final Weight"
+  )
+```
+
+# Plot giant pumpkin weight and OTT
+
+```{r}
+pumpkins_giant %>% 
+  ggplot(aes(ott, weight_lbs)) +
+  geom_point(aes(color = year)) +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(
+    title = "Great Pumpkins: Estimated and OTT"
+  )
+```
+
+# how good are the estimates?
+
+```{r}
+pumpkins_clean3 %>%
+  group_by(type) %>%
+  summarise(
+          count = n(),
+          mean_weight = round(mean(weight_lbs)),
+          mean_estimate = round(mean(est_weight, na.rm = T)),
+          mean_ott = round(mean(ott))
+            )
+```
+
+# are ott and est_weight good predictors of weight? 
+
+```{r}
+model1 <- lm(log10(weight_lbs) ~ log10(est_weight) + log10(ott), data = pumpkins_giant)
+summary(model1)
+
+autoplot(model1, which = 1:6, ncol = 2, label.size = 3) + theme_minimal()
+```
+
+## Add regression line to plot
+
+```{r}
+pumpkins_giant %>% 
+  ggplot(aes(est_weight, weight_lbs)) +
+  geom_point(aes(color = year)) +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_abline(aes(intercept = coef(model1)[1], slope = coef(model1)[2]),
+                colour = "red") +
+  labs(
+    title = "Great Pumpkins: Estimated and Final Weight with Regression Line"
+  )
+```
+
+
+
+# 
