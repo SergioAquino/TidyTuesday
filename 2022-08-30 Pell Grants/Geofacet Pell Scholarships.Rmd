@@ -60,7 +60,7 @@ labs(title = "Distribution of Federal Pell Grant Program Funds by State  (in mil
 pell.1
 ```
 
-## Create output in the png format
+## Save output in the png format
 
 ```{r}
 ggsave('Pell Grants.png', pell.1, scale=1, width=24, height=16,dpi=300)
