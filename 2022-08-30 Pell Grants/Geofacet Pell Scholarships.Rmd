@@ -1,0 +1,65 @@
+---
+title: "Geofacet with Pell Dataset"
+author: "Sergio Aquino"
+date: "2022-08-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+
+```{r }
+library(tidyverse)
+library(geofacet)
+library(ggthemes)
+library(janitor)
+
+options(scipen = 999)
+```
+
+## Download data
+
+```{r }
+pell <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-08-30/pell.csv')
+pell <- pell %>% clean_names()
+View(pell)
+```
+
+## 
+
+```{r fig.width=24,fig.height=14}
+pell.1 <- pell %>%
+  na.omit() %>%
+  group_by(state, year) %>%
+  summarise(Total = sum(award)/1000000) %>%
+  ggplot(aes(x = year, y = Total)) +
+  geom_line() +
+  facet_geo( ~ state,
+             grid = "us_state_grid2",
+             label = "name",
+             scales = "free_y") +
+   theme(
+    legend.position = "top",
+    axis.text.x = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5)
+  ) +
+  theme(strip.text.x = element_text(size = 8)) +
+labs(title = "Distribution of Federal Pell Grant Program Funds by State  (in millions)",
+     subtitle =" ",
+     caption = "Sergio Aquino | Data: U.S. Department of Education") +
+  xlab("") +
+  ylab("") +
+  theme_economist() + 
+  scale_fill_economist()  
+
+pell.1
+```
+
+```{r}
+ggsave('Pell Grants.png', pell.1, scale=1, width=24, height=16,dpi=300)
+```
+
