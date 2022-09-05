@@ -1,5 +1,5 @@
 ---
-title: "Video Games"
+title: "Economic Papers"
 author: "Sergio Aquino"
 date: 2021-03-16
 output: html_output
@@ -15,10 +15,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Load the weekly Data
 
-```{r }
-install.packages("nberwp")
+```{r , include=FALSE}
+#install.packages("nberwp")
 
 library(nberwp)
+library(tidyverse)
 ```
 
 # Load the different tables
@@ -31,9 +32,33 @@ papers <- nberwp::papers
 programs <- nberwp::programs
 ```
 
-#
+```{r}
+papers
+
+```
+
+
+# Plot authors
 
 ```{r}
+e <- programs %>%
+  inner_join(paper.programs) %>% 
+  inner_join(papers) %>% 
+  inner_join(paper.authors) %>% 
+  inner_join(authors)
+```
+# Curious about James Heckman's papers
 
+```{r}
+test <- paper.authors %>% 
+  filter(author == 'w0034.1') %>% 
+  inner_join(papers) %>% 
+  group_by(year) %>% 
+  tally() %>% 
+  arrange(desc(n)) 
+
+test %>% 
+  ggplot(aes(year,n)) +
+    geom_col()
 ```
 
