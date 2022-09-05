@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Libraries
+## Load libraries
 
 ```{r }
 library(tidyverse)
@@ -25,10 +25,11 @@ options(scipen = 999)
 ```{r }
 pell <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-08-30/pell.csv')
 pell <- pell %>% clean_names()
+
 View(pell)
 ```
 
-## 
+## Create geofacet plot in millions using the us_state_grid2
 
 ```{r fig.width=24,fig.height=14}
 pell.1 <- pell %>%
@@ -58,6 +59,8 @@ labs(title = "Distribution of Federal Pell Grant Program Funds by State  (in mil
 
 pell.1
 ```
+
+## Create output in the png format
 
 ```{r}
 ggsave('Pell Grants.png', pell.1, scale=1, width=24, height=16,dpi=300)
